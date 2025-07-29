@@ -1,0 +1,23 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head><title>字幕查找系统</title></head>
+<body>
+    <h1>字幕查找系统</h1>
+    <form method="get" action="/">
+        <input type="text" name="query" placeholder="请输入美剧名称" value="{{ query|default:'' }}">
+        <button type="submit">搜索</button>
+    </form>
+
+    {% if results %}
+        <h2>搜索结果：</h2>
+        <ul>
+        {% for show in results %}
+            <li>{{ show.name }} (ID: {{ show.id }})</li>
+        {% empty %}
+            <li>没有找到结果。</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
