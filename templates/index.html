@@ -13,10 +13,12 @@
         <h2>搜索结果：</h2>
         <ul>
         {% for show in results %}
-            <li>{{ show.name }} (ID: {{ show.id }})</li>
-        {% empty %}
-            <li>没有找到结果。</li>
-        {% endfor %}
+    <li>
+        <a href="{% url 'show_seasons' tv_id=show.id %}">{{ show.name }}</a> (ID: {{ show.id }})
+    </li>
+{% empty %}
+    <li>没有找到结果。</li>
+{% endfor %}
         </ul>
     {% endif %}
 </body>

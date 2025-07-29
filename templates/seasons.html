@@ -1,10 +1,16 @@
+<!-- templates/seasons.html -->
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<html>
+<head><title>{{ tv_name }} - 所有季</title></head>
 <body>
-$END$
+    <h1>{{ tv_name }} - 所有季</h1>
+    <ul>
+        {% for season in seasons %}
+            <li>
+                第 {{ season.season_number }} 季（{{ season.episode_count }} 集）
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="/">返回首页</a>
 </body>
 </html>

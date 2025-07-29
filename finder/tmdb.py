@@ -13,3 +13,10 @@ def search_tv_show(query):
     params = {"api_key": TMDB_API_KEY, "query": query}
     response = requests.get(url, params=params)
     return response.json().get("results", [])
+# finder/tmdb.py
+def get_tv_details(tv_id):
+    url = f"{TMDB_BASE_URL}/tv/{tv_id}"
+    params = {"api_key": TMDB_API_KEY}
+    response = requests.get(url, params=params)
+    return response.json()
+
