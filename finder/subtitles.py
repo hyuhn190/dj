@@ -1,10 +1,40 @@
+# finder/subtitles.py
 import requests
 import json
 import os
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 API_KEY = "DQ0O7m6MVqAtQXvcJ7c6CdCunFwmnIIV"
 APP_NAME = "testapi"
 APP_VERSION = "1"
+
+
+# 创建带重试策略的会话
+def create_session():
+    session = requests.Session()
+
+    # 配置重试策略
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
+
+    adapter = HTTPAdapter(
+        pool_connections=10,
+        pool_maxsize=20,
+        max_retries=retry_strategy
+    )
+
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+    return session
+
+
+# 全局会话实例
+api_session = create_session()
 
 
 def search_subtitles(query="Breaking Bad", season=1, episode=None):
@@ -30,7 +60,7 @@ def search_subtitles(query="Breaking Bad", season=1, episode=None):
         params['episode_number'] = episode
 
     try:
-        resp = requests.get(url, headers=headers, params=params)
+        resp = api_session.get(url, headers=headers, params=params)
 
         # 检查响应
         if resp.status_code == 200:
@@ -67,7 +97,7 @@ def download_subtitle_file(file_id, file_name, save_directory):
     }
 
     try:
-        resp = requests.post(url, headers=headers, json=data)
+        resp = api_session.post(url, headers=headers, json=data)
 
         if resp.status_code == 200:
             download_info = resp.json()
@@ -75,7 +105,7 @@ def download_subtitle_file(file_id, file_name, save_directory):
 
             if download_link:
                 # 下载字幕文件
-                subtitle_resp = requests.get(download_link)
+                subtitle_resp = api_session.get(download_link)
 
                 if subtitle_resp.status_code == 200:
                     # 确保保存目录存在
@@ -99,6 +129,7 @@ def download_subtitle_file(file_id, file_name, save_directory):
 
     return False
 
+# 其余函数保持不变...
 
 def select_best_subtitle(subtitles_list):
     """
@@ -127,7 +158,6 @@ def select_best_subtitle(subtitles_list):
     sorted_subtitles = sorted(subtitles_list, key=sort_key)
     return sorted_subtitles[0]
 
-
 def download_season_subtitles_single(show_name, season, save_directory):
     """
     为每集下载一个最佳英文字幕文件
@@ -140,46 +170,4 @@ def download_season_subtitles_single(show_name, season, save_directory):
     if not results or not results['data']:
         print("未找到相关字幕")
         return
-
-    # 按集数分组字幕
-    episodes_subtitles = {}
-
-    for subtitle in results['data']:
-        attr = subtitle['attributes']
-
-        # 确保是英文字幕
-        if attr['language'] == 'en':
-            episode_num = attr['feature_details']['episode_number']
-
-            # 按集数分组
-            if episode_num not in episodes_subtitles:
-                episodes_subtitles[episode_num] = []
-            episodes_subtitles[episode_num].append(subtitle)
-
-    # 为每集选择最佳字幕并下载
-    downloaded_count = 0
-
-    for episode_num in sorted(episodes_subtitles.keys()):
-        # 选择该集的最佳字幕
-        best_subtitle = select_best_subtitle(episodes_subtitles[episode_num])
-
-        if best_subtitle:
-            attr = best_subtitle['attributes']
-            file_id = attr['files'][0]['file_id']
-
-            # 创建统一的文件命名规则: SxxExx.srt
-            file_name = f"S{season:02d}E{episode_num:02d}.srt"
-
-            # 下载字幕文件
-            if download_subtitle_file(file_id, file_name, save_directory):
-                downloaded_count += 1
-                print(f"第 {episode_num} 集最佳字幕下载完成")
-
-    print(f"成功下载了 {downloaded_count} 个字幕文件到 {save_directory}")
-    print("文件命名规则: SxxExx.srt (例如: S01E01.srt)")
-
-if __name__ == "__main__":
-    # 为《绝命毒师》第一季每集下载一个最佳英文字幕文件
-    save_directory = r"C:\Users\hy303\Desktop\breaking_bad_subtitles"
-    download_season_subtitles_single("Breaking Bad", 4, save_directory)
 

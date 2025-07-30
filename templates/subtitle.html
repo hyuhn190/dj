@@ -1,14 +1,85 @@
 <!-- templates/subtitle.html -->
 <!DOCTYPE html>
 <html>
-<head><title>{{ tv_name }} S{{ season_number }}E{{ episode_number }} 字幕</title></head>
+<head>
+  <meta charset="utf-8" />
+  <title>{{ tv_name }} S{{ season_number }}E{{ episode_number }} 字幕</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; line-height: 1.7; padding: 16px; }
+    .line { margin: 8px 0; }
+    .word { cursor: pointer; padding: 0 2px; border-radius: 4px; }
+    .word:hover { background: #f0f0f0; }
+    .bubble {
+      position: fixed; max-width: 360px; background: #fff; border: 1px solid #ddd; border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.12); padding: 12px; z-index: 9999;
+    }
+    .bubble h4 { margin: 0 0 6px 0; font-size: 16px; }
+    .bubble small { color: #666; }
+    .bubble .actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+  </style>
+</head>
 <body>
-    <h1>{{ tv_name }} - 第 {{ season_number }} 季 第 {{ episode_number }} 集 - 字幕内容</h1>
-    <div style="white-space: pre-wrap;">
-        {% for line in subtitles %}
-            {{ line }}<br>
+  <h1>{{ tv_name }} - 第 {{ season_number }} 季 第 {{ episode_number }} 集 - 字幕</h1>
+
+  <div id="subs">
+    {% for seg in segments %}
+      <div class="line" data-idx="{{ seg.index }}" data-start="{{ seg.start }}" data-end="{{ seg.end }}">
+        {% for w in seg.words %}
+          <span class="word" data-word="{{ w }}">{{ w }}</span>{% if not forloop.last %} {% endif %}
         {% endfor %}
-    </div>
-    <a href="/">返回首页</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <a href="/">返回首页</a>
+
+  <div id="bubble" class="bubble" style="display:none;"></div>
+
+  <script>
+    const bubble = document.getElementById('bubble');
+
+    function showBubble(html, x, y) {
+      bubble.innerHTML = html;
+      bubble.style.left = Math.min(x + 12, window.innerWidth - bubble.offsetWidth - 12) + 'px';
+      bubble.style.top  = Math.min(y + 12, window.innerHeight - bubble.offsetHeight - 12) + 'px';
+      bubble.style.display = 'block';
+    }
+    function hideBubble() { bubble.style.display = 'none'; }
+
+    document.addEventListener('click', async (e) => {
+      const w = e.target.closest('.word');
+      if (!w) { hideBubble(); return; }
+      const word = w.dataset.word;
+
+      showBubble(`<small>加载中…</small>`, e.clientX, e.clientY);
+
+      try {
+        // 1) 翻译
+        const tRes = await fetch(`/api/translate?word=${encodeURIComponent(word)}`);
+        const tData = await tRes.json();
+        if (!tRes.ok) throw new Error(tData.error || '翻译失败');
+
+        // 2) TTS（生成/复用 wav）
+        const aRes = await fetch(`/api/tts?word=${encodeURIComponent(word)}`);
+        const aData = await aRes.json();
+        if (!aRes.ok) throw new Error(aData.error || 'TTS 失败');
+
+        const html = `
+          <h4>${word}</h4>
+          <div>${tData.text ? tData.text : '<small>无翻译</small>'}</div>
+          <div class="actions">
+            <audio id="ttsPlayer" src="${aData.url}" controls></audio>
+          </div>
+          <div><small>来源：googletrans / Windows SAPI</small></div>
+        `;
+        showBubble(html, e.clientX, e.clientY);
+      } catch (err) {
+        showBubble(`<small style="color:#c00;">${err.message}</small>`, e.clientX, e.clientY);
+      }
+    });
+
+    // 点击外部关闭
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideBubble(); });
+  </script>
 </body>
 </html>
