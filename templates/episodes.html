@@ -1,10 +1,17 @@
+<!-- templates/episodes.html -->
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<html>
+<head><title>{{ tv_name }} - 第 {{ season_number }} 季</title></head>
 <body>
-$END$
+    <h1>{{ tv_name }} - 第 {{ season_number }} 季</h1>
+    <ul>
+{% for ep in episodes %}
+    <li>
+        第 {{ ep.episode_number }} 集 - {{ ep.name }}
+        (<a href="{% url 'episode_detail' tv_id=tv_id season_number=season_number episode_number=ep.episode_number %}?tv_name={{ tv_name }}">查看字幕</a>)
+    </li>
+{% endfor %}
+    </ul>
+    <a href="{% url 'show_seasons' tv_id=tv_id %}">返回上一页</a>
 </body>
 </html>

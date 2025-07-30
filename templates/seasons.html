@@ -5,11 +5,13 @@
 <body>
     <h1>{{ tv_name }} - 所有季</h1>
     <ul>
-        {% for season in seasons %}
-            <li>
+    {% for season in seasons %}
+        <li>
+            <a href="{% url 'show_episodes' tv_id=tv_id season_number=season.season_number %}">
                 第 {{ season.season_number }} 季（{{ season.episode_count }} 集）
-            </li>
-        {% endfor %}
+            </a>
+        </li>
+    {% endfor %}
     </ul>
     <a href="/">返回首页</a>
 </body>

@@ -20,3 +20,10 @@ def get_tv_details(tv_id):
     response = requests.get(url, params=params)
     return response.json()
 
+# finder/tmdb.py
+def get_season_episodes(tv_id, season_number):
+    url = f"{TMDB_BASE_URL}/tv/{tv_id}/season/{season_number}"
+    params = {"api_key": TMDB_API_KEY}
+    response = requests.get(url, params=params)
+    return response.json()
+
